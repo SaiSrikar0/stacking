@@ -18,9 +18,10 @@ from sklearn.ensemble import (
 
 from sklearn.linear_model import LogisticRegression
 
-os.makedirs("models", exist_ok=True)
-
 BASE_DIR = os.path.dirname(__file__)
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+os.makedirs(MODELS_DIR, exist_ok=True)
+
 processed_csv = os.path.join(BASE_DIR, "data", "processed", "cleaned_iris.csv")
 raw_csv = os.path.join(BASE_DIR, "data", "raw", "Iris.csv")
 
@@ -89,14 +90,7 @@ print(
     )
 )
 
-joblib.dump(
-    model,
-    "models/stacking_classifier.pkl"
-)
-
-joblib.dump(
-    encoder,
-    "models/label_encoder.pkl"
-)
+joblib.dump(model, os.path.join(MODELS_DIR, "stacking_classifier.pkl"))
+joblib.dump(encoder, os.path.join(MODELS_DIR, "label_encoder.pkl"))
 
 print("Model saved successfully!")

@@ -24,6 +24,7 @@ MODEL_PATH = os.path.join(MODELS_DIR, "stacking_regressor.pkl") if MODELS_DIR el
 processed_csv = os.path.join(BASE_DIR, "data", "processed", "cleaned_housing.csv")
 raw_csv = os.path.join(BASE_DIR, "data", "raw", "housing.csv")
 
+# Try to load existing model; if unavailable, train in-memory and attempt to save.
 model = None
 if MODEL_PATH and os.path.exists(MODEL_PATH):
     try:
@@ -32,30 +33,49 @@ if MODEL_PATH and os.path.exists(MODEL_PATH):
         model = None
 
 if model is None:
-    # Load dataset from processed or raw
+    # Load processed CSV if available, otherwise fall back to raw CSV
     if os.path.exists(processed_csv):
         df = pd.read_csv(processed_csv)
     elif os.path.exists(raw_csv):
         df = pd.read_csv(raw_csv)
     else:
-        raise FileNotFoundError(f"Could not find dataset. Checked: {processed_csv} and {raw_csv}")
+        raise FileNotFoundError(
+            f"Could not find dataset. Checked: {processed_csv} and {raw_csv}"
+        )
 
     X = df.drop("MedInc", axis=1)
+
     y = df["MedInc"]
 
     estimators = [
-        ("rf", RandomForestRegressor(n_estimators=20, random_state=42)),
-        ("ada", AdaBoostRegressor(n_estimators=20, random_state=42)),
+        (
+            "rf",
+            RandomForestRegressor(
+                n_estimators=20,
+                random_state=42
+            )
+        ),
+        (
+            "ada",
+            AdaBoostRegressor(
+                n_estimators=20,
+                random_state=42
+            )
+        )
     ]
 
-    model = StackingRegressor(estimators=estimators, final_estimator=LinearRegression())
+    model = StackingRegressor(
+        estimators=estimators,
+        final_estimator=LinearRegression()
+    )
+
     model.fit(X, y)
 
     if MODEL_PATH:
         try:
             joblib.dump(model, MODEL_PATH)
         except Exception as e:
-            st.warning(f"Could not save regressor model file: {e}")
+            st.warning(f"Could not save model file: {e}")
 
 st.title("Stacking Regressor Housing Prediction")
 
