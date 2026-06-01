@@ -14,17 +14,31 @@ from sklearn.ensemble import (
 
 from sklearn.linear_model import LogisticRegression
 
-os.makedirs("models", exist_ok=True)
-
 BASE_DIR = os.path.dirname(__file__)
-MODEL_PATH = os.path.join(BASE_DIR, "models", "stacking_classifier.pkl")
-ENCODER_PATH = os.path.join(BASE_DIR, "models", "label_encoder.pkl")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+try:
+    os.makedirs(MODELS_DIR, exist_ok=True)
+except Exception:
+    MODELS_DIR = None
+
+MODEL_PATH = os.path.join(MODELS_DIR, "stacking_classifier.pkl") if MODELS_DIR else None
+ENCODER_PATH = os.path.join(MODELS_DIR, "label_encoder.pkl") if MODELS_DIR else None
 
 processed_csv = os.path.join(BASE_DIR, "data", "processed", "cleaned_iris.csv")
 raw_csv = os.path.join(BASE_DIR, "data", "raw", "Iris.csv")
 
-if not os.path.exists(MODEL_PATH):
+# Try loading pretrained model; if loading fails, train in-memory and attempt to save.
+model = None
+encoder = None
+if MODEL_PATH and os.path.exists(MODEL_PATH):
+    try:
+        model = joblib.load(MODEL_PATH)
+        encoder = joblib.load(ENCODER_PATH)
+    except Exception:
+        model = None
+        encoder = None
 
+if model is None:
     # Load processed CSV if available, otherwise fall back to raw CSV
     if os.path.exists(processed_csv):
         df = pd.read_csv(processed_csv)
@@ -36,45 +50,25 @@ if not os.path.exists(MODEL_PATH):
         )
 
     encoder = LabelEncoder()
-
-    df["Species"] = encoder.fit_transform(
-        df["Species"]
-    )
-
+    df["Species"] = encoder.fit_transform(df["Species"])
     X = df.drop("Species", axis=1)
-
     y = df["Species"]
 
     estimators = [
-        (
-            "rf",
-            RandomForestClassifier(
-                n_estimators=20,
-                random_state=42
-            )
-        ),
-        (
-            "ada",
-            AdaBoostClassifier(
-                n_estimators=20,
-                random_state=42
-            )
-        )
+        ("rf", RandomForestClassifier(n_estimators=20, random_state=42)),
+        ("ada", AdaBoostClassifier(n_estimators=20, random_state=42)),
     ]
 
-    model = StackingClassifier(
-        estimators=estimators,
-        final_estimator=LogisticRegression()
-    )
-
+    model = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression())
     model.fit(X, y)
 
-    joblib.dump(model, MODEL_PATH)
-    joblib.dump(encoder, ENCODER_PATH)
-
-else:
-    model = joblib.load(MODEL_PATH)
-    encoder = joblib.load(ENCODER_PATH)
+    # Attempt to save model and encoder; if saving fails (e.g., read-only filesystem), continue without failing.
+    if MODEL_PATH and ENCODER_PATH:
+        try:
+            joblib.dump(model, MODEL_PATH)
+            joblib.dump(encoder, ENCODER_PATH)
+        except Exception as e:
+            st.warning(f"Could not save model files: {e}")
 
 st.title(
     "Iris Flower Stacking Classifier"
