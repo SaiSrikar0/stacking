@@ -1,5 +1,7 @@
 # Stacking Regressor Housing Prediction
 
+Deployed app : https://stacking-regre.streamlit.app/
+
 ## Overview
 
 This project implements a Stacking Regressor model to predict Median Income using California Housing data. The model combines multiple machine learning algorithms to improve prediction performance through ensemble learning.
