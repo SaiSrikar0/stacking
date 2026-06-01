@@ -12,51 +12,50 @@ from sklearn.ensemble import (
 
 from sklearn.linear_model import LinearRegression
 
-os.makedirs("models", exist_ok=True)
+BASE_DIR = os.path.dirname(__file__)
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+try:
+    os.makedirs(MODELS_DIR, exist_ok=True)
+except Exception:
+    MODELS_DIR = None
 
-MODEL_PATH = "models/stacking_regressor.pkl"
+MODEL_PATH = os.path.join(MODELS_DIR, "stacking_regressor.pkl") if MODELS_DIR else None
 
-if not os.path.exists(MODEL_PATH):
+processed_csv = os.path.join(BASE_DIR, "data", "processed", "cleaned_housing.csv")
+raw_csv = os.path.join(BASE_DIR, "data", "raw", "housing.csv")
 
-    df = pd.read_csv(
-        "data/processed/cleaned_housing.csv"
-    )
+model = None
+if MODEL_PATH and os.path.exists(MODEL_PATH):
+    try:
+        model = joblib.load(MODEL_PATH)
+    except Exception:
+        model = None
+
+if model is None:
+    # Load dataset from processed or raw
+    if os.path.exists(processed_csv):
+        df = pd.read_csv(processed_csv)
+    elif os.path.exists(raw_csv):
+        df = pd.read_csv(raw_csv)
+    else:
+        raise FileNotFoundError(f"Could not find dataset. Checked: {processed_csv} and {raw_csv}")
 
     X = df.drop("MedInc", axis=1)
-
     y = df["MedInc"]
 
     estimators = [
-        (
-            "rf",
-            RandomForestRegressor(
-                n_estimators=20,
-                random_state=42
-            )
-        ),
-        (
-            "ada",
-            AdaBoostRegressor(
-                n_estimators=20,
-                random_state=42
-            )
-        )
+        ("rf", RandomForestRegressor(n_estimators=20, random_state=42)),
+        ("ada", AdaBoostRegressor(n_estimators=20, random_state=42)),
     ]
 
-    model = StackingRegressor(
-        estimators=estimators,
-        final_estimator=LinearRegression()
-    )
-
+    model = StackingRegressor(estimators=estimators, final_estimator=LinearRegression())
     model.fit(X, y)
 
-    joblib.dump(
-        model,
-        MODEL_PATH
-    )
-
-else:
-    model = joblib.load(MODEL_PATH)
+    if MODEL_PATH:
+        try:
+            joblib.dump(model, MODEL_PATH)
+        except Exception as e:
+            st.warning(f"Could not save regressor model file: {e}")
 
 st.title("Stacking Regressor Housing Prediction")
 

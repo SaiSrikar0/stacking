@@ -14,11 +14,19 @@ from sklearn.ensemble import (
 
 from sklearn.linear_model import LinearRegression
 
-os.makedirs("models", exist_ok=True)
+BASE_DIR = os.path.dirname(__file__)
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+os.makedirs(MODELS_DIR, exist_ok=True)
 
-df = pd.read_csv(
-    "data/processed/cleaned_housing.csv"
-)
+processed_csv = os.path.join(BASE_DIR, "data", "processed", "cleaned_housing.csv")
+raw_csv = os.path.join(BASE_DIR, "data", "raw", "housing.csv")
+
+if os.path.exists(processed_csv):
+    df = pd.read_csv(processed_csv)
+elif os.path.exists(raw_csv):
+    df = pd.read_csv(raw_csv)
+else:
+    raise FileNotFoundError(f"Could not find dataset. Checked: {processed_csv} and {raw_csv}")
 
 X = df.drop("MedInc", axis=1)
 
@@ -67,9 +75,6 @@ print(
     r2_score(y_test, predictions)
 )
 
-joblib.dump(
-    model,
-    "models/stacking_regressor.pkl"
-)
+joblib.dump(model, os.path.join(MODELS_DIR, "stacking_regressor.pkl"))
 
 print("Model saved successfully!")
