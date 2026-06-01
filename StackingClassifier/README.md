@@ -1,5 +1,7 @@
 # Stacking Classifier - Iris Flower Classification
 
+Deployed app : https://stacking-classi.streamlit.app/
+
 ## Overview
 
 This project implements a Stacking Classifier to predict Iris flower species using ensemble learning techniques. The model combines multiple machine learning algorithms to improve classification performance and prediction accuracy.
