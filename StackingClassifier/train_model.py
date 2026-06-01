@@ -20,9 +20,16 @@ from sklearn.linear_model import LogisticRegression
 
 os.makedirs("models", exist_ok=True)
 
-df = pd.read_csv(
-    "data/processed/cleaned_iris.csv"
-)
+BASE_DIR = os.path.dirname(__file__)
+processed_csv = os.path.join(BASE_DIR, "data", "processed", "cleaned_iris.csv")
+raw_csv = os.path.join(BASE_DIR, "data", "raw", "Iris.csv")
+
+if os.path.exists(processed_csv):
+    df = pd.read_csv(processed_csv)
+elif os.path.exists(raw_csv):
+    df = pd.read_csv(raw_csv)
+else:
+    raise FileNotFoundError(f"Could not find dataset. Checked: {processed_csv} and {raw_csv}")
 
 encoder = LabelEncoder()
 

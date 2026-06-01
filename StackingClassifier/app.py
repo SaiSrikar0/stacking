@@ -16,14 +16,24 @@ from sklearn.linear_model import LogisticRegression
 
 os.makedirs("models", exist_ok=True)
 
-MODEL_PATH = "models/stacking_classifier.pkl"
-ENCODER_PATH = "models/label_encoder.pkl"
+BASE_DIR = os.path.dirname(__file__)
+MODEL_PATH = os.path.join(BASE_DIR, "models", "stacking_classifier.pkl")
+ENCODER_PATH = os.path.join(BASE_DIR, "models", "label_encoder.pkl")
+
+processed_csv = os.path.join(BASE_DIR, "data", "processed", "cleaned_iris.csv")
+raw_csv = os.path.join(BASE_DIR, "data", "raw", "Iris.csv")
 
 if not os.path.exists(MODEL_PATH):
 
-    df = pd.read_csv(
-        "data/processed/cleaned_iris.csv"
-    )
+    # Load processed CSV if available, otherwise fall back to raw CSV
+    if os.path.exists(processed_csv):
+        df = pd.read_csv(processed_csv)
+    elif os.path.exists(raw_csv):
+        df = pd.read_csv(raw_csv)
+    else:
+        raise FileNotFoundError(
+            f"Could not find dataset. Checked: {processed_csv} and {raw_csv}"
+        )
 
     encoder = LabelEncoder()
 
@@ -59,22 +69,12 @@ if not os.path.exists(MODEL_PATH):
 
     model.fit(X, y)
 
-    joblib.dump(
-        model,
-        MODEL_PATH
-    )
-
-    joblib.dump(
-        encoder,
-        ENCODER_PATH
-    )
+    joblib.dump(model, MODEL_PATH)
+    joblib.dump(encoder, ENCODER_PATH)
 
 else:
     model = joblib.load(MODEL_PATH)
-
-    encoder = joblib.load(
-        ENCODER_PATH
-    )
+    encoder = joblib.load(ENCODER_PATH)
 
 st.title(
     "Iris Flower Stacking Classifier"
